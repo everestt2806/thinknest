@@ -46,7 +46,7 @@ export default function NotificationsPage() {
 
     if (data) {
       const withPosts = await Promise.all(
-        data.map(async (n) => {
+        data.map(async (n: Record<string, unknown>) => {
           let post = null;
           if (n.post_id) {
             const { data: p } = await supabase
