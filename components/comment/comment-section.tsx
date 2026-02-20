@@ -29,7 +29,7 @@ export function CommentSection({ postId, commentCount }: CommentSectionProps) {
 
     if (data) {
       const commentsWithReplies = await Promise.all(
-        data.map(async (comment) => {
+        data.map(async (comment: Record<string, unknown>) => {
           const { data: replies } = await supabase
             .from("comments")
             .select("*, profiles(*)")

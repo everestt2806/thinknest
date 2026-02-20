@@ -66,7 +66,7 @@ export function Header() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event: string, session: { user?: { id: string } } | null) => {
       if (
         (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") &&
         session?.user
