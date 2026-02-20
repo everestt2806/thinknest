@@ -27,13 +27,13 @@ jobs:
             echo "==> Pulling latest code..."
             git pull origin main
 
-            echo "==> Writing env file..."
+            echo "==> Writing env files..."
             cat > .env.local << 'ENVEOF'
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
             ENVEOF
-            # Remove leading whitespace from heredoc
             sed -i 's/^            //' .env.local
+            cp .env.local .env
 
             echo "==> Building and starting containers..."
             docker compose up --build -d
