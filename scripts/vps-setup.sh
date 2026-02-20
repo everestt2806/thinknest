@@ -7,7 +7,7 @@
 
 set -e
 
-REPO_URL="https://github.com/YOUR_USERNAME/thinknest.git"  # <-- THAY BANG REPO CUA BAN
+REPO_URL="https://github.com/everestt2806/thinknest.git"  # <-- THAY BANG REPO CUA BAN
 APP_DIR="$HOME/thinknest"
 
 echo "========================================="
