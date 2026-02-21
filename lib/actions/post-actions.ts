@@ -110,8 +110,21 @@ export async function updatePost(postId: string, formData: FormData) {
   const coverImage = formData.get("coverImage") as string;
   const categoryId = formData.get("categoryId") as string;
   const status = formData.get("status") as string;
+  const tagsJson = formData.get("tags") as string;
+  const seriesId = formData.get("seriesId") as string;
 
   const readingTime = calculateReadingTime(content);
+
+  const { data: existingPost } = await supabase
+    .from("posts")
+    .select("published_at")
+    .eq("id", postId)
+    .single();
+
+  const publishedAt =
+    status === "published"
+      ? existingPost?.published_at || new Date().toISOString()
+      : undefined;
 
   const { data: post, error } = await supabase
     .from("posts")
@@ -121,10 +134,10 @@ export async function updatePost(postId: string, formData: FormData) {
       excerpt: excerpt || content.replace(/<[^>]*>/g, "").substring(0, 200),
       cover_image: coverImage || null,
       category_id: categoryId || null,
+      series_id: seriesId || null,
       reading_time: readingTime,
       status: status as "draft" | "published" | "archived",
-      published_at:
-        status === "published" ? new Date().toISOString() : undefined,
+      published_at: publishedAt,
       updated_at: new Date().toISOString(),
     })
     .eq("id", postId)
@@ -134,6 +147,42 @@ export async function updatePost(postId: string, formData: FormData) {
 
   if (error) {
     return { error: error.message };
+  }
+
+  if (tagsJson) {
+    try {
+      const tags = JSON.parse(tagsJson) as string[];
+      await supabase.from("post_tags").delete().eq("post_id", postId);
+
+      for (const tagName of tags) {
+        const tagSlug = slugify(tagName, { lower: true, strict: true });
+        const { data: existingTag } = await supabase
+          .from("tags")
+          .select("id")
+          .eq("slug", tagSlug)
+          .single();
+
+        let tagId: string;
+        if (existingTag) {
+          tagId = existingTag.id;
+        } else {
+          const { data: newTag } = await supabase
+            .from("tags")
+            .insert({ name: tagName, slug: tagSlug })
+            .select("id")
+            .single();
+          if (!newTag) continue;
+          tagId = newTag.id;
+        }
+
+        await supabase.from("post_tags").insert({
+          post_id: postId,
+          tag_id: tagId,
+        });
+      }
+    } catch {
+      // ignore tag errors
+    }
   }
 
   redirect(`/post/${post.slug}`);

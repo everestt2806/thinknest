@@ -13,6 +13,7 @@ import { BookmarkButton } from "@/components/shared/bookmark-button";
 import { ShareButton } from "@/components/shared/share-button";
 import { CommentSection } from "@/components/comment/comment-section";
 import { FollowButton } from "@/components/shared/follow-button";
+import { PostActions } from "@/components/post/post-actions";
 import { createClient } from "@/lib/supabase/server";
 import { formatDistanceToNow, format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -199,6 +200,9 @@ export default async function PostDetailPage({ params }: PageProps) {
           />
           <BookmarkButton postId={post.id} />
           <ShareButton url={`/post/${post.slug}`} title={post.title} />
+          <div className="ml-auto">
+            <PostActions postId={post.id} authorId={post.author_id} />
+          </div>
         </div>
 
         <Separator className="mb-8" />

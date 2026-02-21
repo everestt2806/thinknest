@@ -12,6 +12,7 @@ import {
   User,
   Settings,
   Bookmark,
+  FileText,
   Sun,
   Moon,
   X,
@@ -83,7 +84,8 @@ export function Header() {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase, setProfile]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [setProfile]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,6 +222,12 @@ export function Header() {
                     <Link href={`/user/${profile.username}`}>
                       <User className="mr-2 h-4 w-4" />
                       Trang cá nhân
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/my-posts">
+                      <FileText className="mr-2 h-4 w-4" />
+                      Bài viết của tôi
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

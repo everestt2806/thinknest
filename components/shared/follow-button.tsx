@@ -28,7 +28,8 @@ export function FollowButton({ userId }: FollowButtonProps) {
       setIsFollowing(!!data);
     };
     check();
-  }, [profile, userId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, userId]);
 
   if (!profile || profile.id === userId) return null;
 

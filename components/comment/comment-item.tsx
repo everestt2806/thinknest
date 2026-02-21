@@ -62,7 +62,15 @@ export function CommentItem({
               </Link>
               <span className="text-xs text-muted-foreground">{timeAgo}</span>
             </div>
-            <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+            <p
+              className="text-sm whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{
+                __html: comment.content.replace(
+                  /@(\w+)/g,
+                  '<a href="/user/$1" class="font-medium text-primary hover:underline">@$1</a>'
+                ),
+              }}
+            />
           </div>
           <div className="mt-1 flex items-center gap-2">
             <VoteButton

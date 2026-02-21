@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, Save, Send, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ import { PostEditor } from "@/components/post/post-editor";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { SeriesDialog } from "@/components/series/series-dialog";
 import { createClient } from "@/lib/supabase/client";
-import { createPost } from "@/lib/actions/post-actions";
+import { updatePost } from "@/lib/actions/post-actions";
 import type { Category } from "@/types/database";
 
 interface Series {
@@ -27,8 +27,15 @@ interface Series {
   title: string;
 }
 
-export default function WritePage() {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function EditPostPage({ params }: PageProps) {
+  const { id: postId } = use(params);
   const router = useRouter();
+  const supabase = createClient();
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [excerpt, setExcerpt] = useState("");
@@ -40,10 +47,10 @@ export default function WritePage() {
   const [seriesList, setSeriesList] = useState<Series[]>([]);
   const [seriesId, setSeriesId] = useState("");
   const [showSeriesDialog, setShowSeriesDialog] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState<string>("draft");
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
-
-  const supabase = createClient();
+  const [loading, setLoading] = useState(true);
 
   const fetchSeries = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -58,17 +65,54 @@ export default function WritePage() {
   };
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase
+    const fetchData = async () => {
+      const { data: cats } = await supabase
         .from("categories")
         .select("*")
         .order("name");
-      if (data) setCategories(data);
+      if (cats) setCategories(cats);
+
+      await fetchSeries();
+
+      const { data: post } = await supabase
+        .from("posts")
+        .select("*")
+        .eq("id", postId)
+        .single();
+
+      if (!post) {
+        router.push("/");
+        return;
+      }
+
+      setTitle(post.title);
+      setContent(post.content);
+      setExcerpt(post.excerpt || "");
+      setCoverImage(post.cover_image || "");
+      setCategoryId(post.category_id || "");
+      setSeriesId(post.series_id || "");
+      setCurrentStatus(post.status);
+
+      const { data: postTags } = await supabase
+        .from("post_tags")
+        .select("tags(name)")
+        .eq("post_id", postId);
+
+      if (postTags) {
+        const tagNames = postTags
+          .map((pt: Record<string, unknown>) => {
+            const tag = pt.tags as unknown as { name: string } | null;
+            return tag?.name;
+          })
+          .filter(Boolean) as string[];
+        setTags(tagNames);
+      }
+
+      setLoading(false);
     };
-    fetchCategories();
-    fetchSeries();
+    fetchData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [postId]);
 
   const addTag = () => {
     const tag = tagInput.trim();
@@ -96,9 +140,9 @@ export default function WritePage() {
     formData.set("categoryId", categoryId);
     formData.set("status", status);
     formData.set("tags", JSON.stringify(tags));
-    if (seriesId) formData.set("seriesId", seriesId);
+    if (seriesId && seriesId !== "none") formData.set("seriesId", seriesId);
 
-    const result = await createPost(formData);
+    const result = await updatePost(postId, formData);
     if (result?.error) {
       alert(result.error);
       setSaving(false);
@@ -106,16 +150,20 @@ export default function WritePage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Viết bài mới</h1>
+        <h1 className="text-2xl font-bold">Chỉnh sửa bài viết</h1>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.back()}
-          >
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
             Hủy
           </Button>
           <Button
@@ -135,7 +183,7 @@ export default function WritePage() {
           >
             {publishing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <Send className="mr-2 h-4 w-4" />
-            Đăng bài
+            {currentStatus === "published" ? "Cập nhật" : "Đăng bài"}
           </Button>
         </div>
       </div>
@@ -261,7 +309,9 @@ export default function WritePage() {
 
         <div>
           <Label className="mb-2 block">Nội dung bài viết</Label>
-          <PostEditor content={content} onChange={setContent} />
+          {content !== undefined && (
+            <PostEditor content={content} onChange={setContent} />
+          )}
         </div>
       </div>
     </div>

@@ -65,7 +65,8 @@ export default function NotificationsPage() {
       );
       setNotifications(withPosts);
     }
-  }, [profile, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
 
   useEffect(() => {
     fetchNotifications();

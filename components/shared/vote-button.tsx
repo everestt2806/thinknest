@@ -40,7 +40,8 @@ export function VoteButton({
       if (data) setUserVote(data.value);
     };
     fetchVote();
-  }, [profile, postId, commentId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, postId, commentId]);
 
   const handleVote = async (value: number) => {
     if (!profile) {

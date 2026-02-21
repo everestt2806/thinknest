@@ -28,7 +28,8 @@ export function BookmarkButton({ postId }: BookmarkButtonProps) {
       setIsBookmarked(!!data);
     };
     check();
-  }, [profile, postId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, postId]);
 
   const toggleBookmark = async () => {
     if (!profile) {

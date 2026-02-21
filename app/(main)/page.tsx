@@ -1,20 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
-import { PostCard } from "@/components/post/post-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { POSTS_PER_PAGE } from "@/lib/constants";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, PenSquare } from "lucide-react";
+import { PenSquare } from "lucide-react";
 import type { PostWithAuthor } from "@/types/database";
+import { PostListInfinite } from "@/components/shared/post-list-infinite";
 
 interface PageProps {
-  searchParams: Promise<{ sort?: string; page?: string }>;
+  searchParams: Promise<{ sort?: string }>;
 }
 
 export default async function HomePage({ searchParams }: PageProps) {
-  const { sort = "hot", page = "1" } = await searchParams;
-  const currentPage = Math.max(1, parseInt(page));
-  const offset = (currentPage - 1) * POSTS_PER_PAGE;
+  const { sort = "hot" } = await searchParams;
 
   const supabase = await createClient();
 
@@ -22,7 +20,7 @@ export default async function HomePage({ searchParams }: PageProps) {
     .from("posts")
     .select("*, profiles(*), categories(*)", { count: "exact" })
     .eq("status", "published")
-    .range(offset, offset + POSTS_PER_PAGE - 1);
+    .range(0, POSTS_PER_PAGE - 1);
 
   switch (sort) {
     case "latest":
@@ -37,15 +35,13 @@ export default async function HomePage({ searchParams }: PageProps) {
         .order("vote_score", { ascending: false })
         .order("view_count", { ascending: false });
       break;
-    default: // "hot" - combination of recency and score
+    default:
       query = query.order("vote_score", { ascending: false }).order("published_at", { ascending: false });
       break;
   }
 
   const { data: posts, count } = await query;
-  const totalPages = Math.ceil((count || 0) / POSTS_PER_PAGE);
 
-  // Fetch comment counts
   const commentCounts: Record<string, number> = {};
   if (posts) {
     const { data: counts } = await supabase
@@ -62,7 +58,6 @@ export default async function HomePage({ searchParams }: PageProps) {
     }
   }
 
-  // Top authors
   const { data: topAuthors } = await supabase
     .from("profiles")
     .select("username, display_name, avatar_url, karma")
@@ -101,15 +96,15 @@ export default async function HomePage({ searchParams }: PageProps) {
       </Tabs>
 
       <div className="grid gap-4 lg:grid-cols-[1fr,280px]">
-        <div className="space-y-4">
+        <div>
           {posts && posts.length > 0 ? (
-            posts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post as PostWithAuthor}
-                commentCount={commentCounts[post.id] || 0}
-              />
-            ))
+            <PostListInfinite
+              initialPosts={posts as PostWithAuthor[]}
+              initialCommentCounts={commentCounts}
+              sort={sort}
+              pageSize={POSTS_PER_PAGE}
+              totalCount={count || 0}
+            />
           ) : (
             <div className="rounded-lg border p-12 text-center">
               <p className="text-lg font-medium">Chưa có bài viết nào</p>
@@ -124,54 +119,8 @@ export default async function HomePage({ searchParams }: PageProps) {
               </Button>
             </div>
           )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage === 1}
-                asChild={currentPage > 1}
-              >
-                {currentPage > 1 ? (
-                  <Link
-                    href={`/?sort=${sort}&page=${currentPage - 1}`}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Link>
-                ) : (
-                  <span>
-                    <ChevronLeft className="h-4 w-4" />
-                  </span>
-                )}
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                Trang {currentPage} / {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage >= totalPages}
-                asChild={currentPage < totalPages}
-              >
-                {currentPage < totalPages ? (
-                  <Link
-                    href={`/?sort=${sort}&page=${currentPage + 1}`}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Link>
-                ) : (
-                  <span>
-                    <ChevronRight className="h-4 w-4" />
-                  </span>
-                )}
-              </Button>
-            </div>
-          )}
         </div>
 
-        {/* Right sidebar - Top Authors (desktop only) */}
         <aside className="hidden lg:block">
           <div className="sticky top-20 space-y-6">
             <div className="rounded-lg border bg-card p-4">

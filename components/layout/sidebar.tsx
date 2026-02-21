@@ -7,6 +7,7 @@ import {
   TrendingUp,
   Clock,
   Trophy,
+  Hash,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { CATEGORIES } from "@/lib/constants";
@@ -18,6 +19,7 @@ const navItems = [
   { label: "Mới nhất", href: "/?sort=latest", icon: Clock },
   { label: "Trending", href: "/?sort=trending", icon: TrendingUp },
   { label: "Top bài viết", href: "/top", icon: Trophy },
+  { label: "Khám phá Tags", href: "/tags", icon: Hash },
 ];
 
 export function Sidebar() {

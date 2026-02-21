@@ -43,6 +43,27 @@ export function CommentForm({
     });
 
     if (!error) {
+      const mentions = content.match(/@(\w+)/g);
+      if (mentions) {
+        for (const mention of mentions) {
+          const username = mention.slice(1);
+          const { data: mentionedUser } = await supabase
+            .from("profiles")
+            .select("id")
+            .eq("username", username)
+            .single();
+
+          if (mentionedUser && mentionedUser.id !== profile.id) {
+            await supabase.from("notifications").insert({
+              user_id: mentionedUser.id,
+              actor_id: profile.id,
+              type: "mention",
+              post_id: postId,
+            });
+          }
+        }
+      }
+
       setContent("");
       onSuccess();
     }
@@ -62,7 +83,7 @@ export function CommentForm({
       </Avatar>
       <div className="flex-1 space-y-2">
         <Textarea
-          placeholder={parentId ? "Viết phản hồi..." : "Viết bình luận..."}
+          placeholder={parentId ? "Viết phản hồi... (dùng @username để tag)" : "Viết bình luận... (dùng @username để tag)"}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           rows={parentId ? 2 : 3}

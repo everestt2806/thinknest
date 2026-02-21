@@ -40,7 +40,8 @@ export function CommentSection({ postId, commentCount }: CommentSectionProps) {
       );
       setComments(commentsWithReplies);
     }
-  }, [postId, supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId]);
 
   useEffect(() => {
     fetchComments();
